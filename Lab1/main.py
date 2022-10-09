@@ -5,6 +5,7 @@ from tkinter import filedialog
 import sys
 import math
 isRecursionSet = 0
+graphMode = 1
 
 def getPartition(array, low, high):
     pivot = array[high]
@@ -130,7 +131,7 @@ def writeTableToFile(f, dictionary):
     f.write(st)
 
 
-def drawWindow(views):
+def drawHistogramOfAmounts(views):
     maxViews = max(views)
     minViews = min(views)
     quantity = len(views)
@@ -177,8 +178,93 @@ def drawWindow(views):
     c.create_text(47, (minY + c_height - y_gap)/2, anchor=SE, text=str(maxViews/2))
     c.create_line(47, (minY + c_height - y_gap)/2, 53, (minY + c_height - y_gap)/2)
 
-    #root.protocol("WM_DELETE_WINDOW", root.destroy())
     root.mainloop()
+
+
+def drawHistogramOfFreq(sortediVews):
+    freqDictionary = getFrequencyDictionary(sortediVews)
+    maxFreq = max(freqDictionary.values())
+    minFreq = min(freqDictionary.values())
+    minValue = min(freqDictionary)
+    maxValue = max(freqDictionary)
+    quantity = len(freqDictionary.values())
+    c_width = 1000
+    if quantity >= 1000:
+        c_width = quantity
+    c_height = 700
+
+    root = Tk()
+    root.title("Bar Graph")
+    frame = Frame(root, width=c_width, height=c_height)
+    frame.pack(expand=True, fill=BOTH)
+    c = Canvas(frame, width=c_width, height=c_height, bg="white", scrollregion=(0, 0, c_width, c_height))
+    hbar = Scrollbar(frame, orient=HORIZONTAL)
+    hbar.pack(side=BOTTOM, fill=X)
+    hbar.config(command=c.xview)
+    c.config(width=1000, height=c_height)
+    c.config(xscrollcommand=hbar.set)
+    c.pack(side=LEFT, expand=True, fill=BOTH)
+    c.pack()
+
+    y_stretch = 0.6 * c_height / maxFreq
+    y_gap = 20
+    x_stretch = 0
+    x_width = 0.9 * c_width / quantity
+    x_gap = 60
+
+    minY = 100000
+    maxX = 0
+    for x, y in enumerate(freqDictionary):
+        x0 = x * x_stretch + x * x_width + x_gap
+        y0 = c_height - (freqDictionary[y] * y_stretch + y_gap)
+        if y0 < minY:
+            minY = y0
+
+        x1 = x * x_stretch + x * x_width + x_width + x_gap
+        y1 = c_height - y_gap
+        if x1 > maxX:
+            maxX = x1
+
+        c.create_rectangle(x0, y0, x1, y1, fill="red", outline="")
+        if quantity <= 100:
+            c.create_text(x0 + 2, y0, anchor=SW, text=str(freqDictionary[y]))
+
+    c.create_line(50, c_height - y_gap + 1, 50, minY - 30, arrow=LAST)
+    c.create_text(47, minY, anchor=SE, text=str(maxFreq))
+    c.create_line(47, minY, 53, minY)
+    c.create_text(47, (minY + c_height - y_gap)/2, anchor=SE, text=str(maxFreq/2))
+    c.create_line(47, (minY + c_height - y_gap)/2, 53, (minY + c_height - y_gap)/2)
+    c.create_text(50, minY - 30, anchor=SW, text="Frequency")
+
+    c.create_line(50, c_height - y_gap + 1, maxX + 20, c_height - y_gap + 1, arrow=LAST)
+    c.create_line(60, c_height - y_gap + 4, 60, c_height - y_gap - 2)
+    c.create_text(61, c_height - y_gap + 6, anchor=NW, text=min(freqDictionary))
+    iterator = 1
+    step = 50
+    while iterator < math.floor((maxX - 30)/step) and quantity > 100:
+        c.create_line(60 + iterator * step, c_height - y_gap + 4, 60 + iterator * step, c_height - y_gap - 2)
+
+        percent = iterator/math.floor(maxX/step)
+        lam = 1/(1 - percent) - 1
+        approxText = (minValue + lam * maxValue)/(1 + lam)
+        text = getNearestApproxNumberKey(freqDictionary, approxText)
+        c.create_text(61 + iterator * step, c_height - y_gap + 6, anchor=NW, text=text)
+        iterator += 1
+    c.create_line(maxX, c_height - y_gap + 4, maxX, c_height - y_gap - 2)
+    c.create_text(maxX, c_height - y_gap + 6, anchor=NW, text=maxValue)
+
+    root.mainloop()
+
+
+def getNearestApproxNumberKey(freqDictionary : dict, value):
+    diff = 100000000
+    appKey = 0
+    for key in freqDictionary:
+        if abs(key - value) < diff:
+            diff = value - key
+            appKey = key
+    return appKey
+
 
 
 def getMostVieved(rawViews):
@@ -215,13 +301,16 @@ def run(fileName):
         f.write(f"Variance: {dev}\n")
         f.write(f"Standart deviation: {stDev}\n")
         f.close()
-    drawWindow(rawViews)
+    if graphMode == 0:
+        drawHistogramOfAmounts(rawViews)
+    else:
+        drawHistogramOfFreq(sortedViews)
     return name
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('file_path', type=str, nargs='?',
-                    help='path to the input file')
+                    help='path to the file with input data')
 args = parser.parse_args()
 fileName = args.file_path
 if fileName is None:
