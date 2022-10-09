@@ -90,7 +90,7 @@ def getMean(rawViews):
     return mean
 
 
-def getDeviation(rawViews):
+def getVariance(rawViews):
     standartDeviation = getStandartDeviation(rawViews)
     deviation = pow(standartDeviation, 2)
     return deviation
@@ -199,7 +199,7 @@ def run(fileName):
     median = getMedian(sortedViews)
     freq = getFrequencyDictionary(rawViews)
     cumulativeFreq = getCumulativeFrequencyDictionary(rawViews)
-    dev = getDeviation(rawViews)
+    dev = getVariance(rawViews)
     stDev = getStandartDeviation(rawViews)
     mostViewed = getMostVieved(rawViews)
     name = f"resultsOf{time.time()}.txt"
@@ -212,7 +212,7 @@ def run(fileName):
         f.write(f"Most viewed film: {mostViewed} with {rawViews[mostViewed]} views\n")
         f.write(f"Mode: {mode}\n")
         f.write(f"Median: {median}\n")
-        f.write(f"Deviation: {dev}\n")
+        f.write(f"Variance: {dev}\n")
         f.write(f"Standart deviation: {stDev}\n")
         f.close()
     drawWindow(rawViews)
